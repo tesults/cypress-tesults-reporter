@@ -1,0 +1,34 @@
+{
+  "name": "cypress-tesults-reporter",
+  "version": "1.0.0",
+  "description": "Cypress Tesults Reporter",
+  "main": "cypress-tesults-reporter.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tesults/cypress-tesults-reporter.git"
+  },
+  "keywords": [
+    "cypress",
+    "tesults",
+    "reporter",
+    "test",
+    "results",
+    "reporting"
+  ],
+  "author": {
+    "name": "Ajeet Dhaliwal",
+    "email": "help@tesults.com",
+    "url": "https://www.tesults.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tesults/cypress-tesults-reporter/issues"
+  },
+  "homepage": "https://github.com/tesults/cypress-tesults-reporter#readme",
+  "dependencies": {
+    "tesults": "^1.1.0"
+  }
+}
