@@ -21,52 +21,68 @@ module.exports.results = function (results, args) {
             }
         }
         // test cases
-        for (let i = 0; i < results.runs.length; i++) {
-            let run = results.runs[i];
-            for (let j = 0; j < run.tests.length; j++) {
-                let test = run.tests[j];
-                let testCase = {};
-                // suite and name
-                if (Array.isArray(test.title) !== true) {
-                    continue;
-                }
-                let suite = [];
-                for (let k = 0; k < test.title.length - 1; k++) {
-                    suite.push(test.title[k]);
-                }
-                if (suite.length > 0) {
-                    testCase.suite = suite.join(" - ");
-                }
-                testCase.name = test.title[test.title.length -1];
-                // result
-                if (test.state === 'passed') {
-                    testCase.result = 'pass';
-                } else if (test.state === 'failed') {
-                    testCase.result = 'fail';
-                } else {
-                    testCase.result = 'unknown';
-                }
-                // reason
-                if (testCase.result === 'fail') {
-                    testCase.reason = test.error + " " + test.stack;
-                }
-                // files
-                testCase.files = [];
-                for (let k = 0; k < run.screenshots.length; k++) {
-                    let screenshot = run.screenshots[k];
-                    if (test.testId === screenshot.testId) {
-                        testCase.files.push(screenshot.path);
+        if (results !== undefined) {
+            if (results.runs !== undefined) {
+                for (let i = 0; i < results.runs.length; i++) {
+                    let run = results.runs[i];
+                    if (run !== undefined) {
+                        if (run.tests !== undefined) {
+                            for (let j = 0; j < run.tests.length; j++) {
+                                let test = run.tests[j];
+                                if (test !== undefined) {
+                                    let testCase = {};
+                                    // suite and name
+                                    if (Array.isArray(test.title) !== true) {
+                                        continue;
+                                    }
+                                    let suite = [];
+                                    if (test.title !== undefined) {
+                                        for (let k = 0; k < test.title.length - 1; k++) {
+                                            suite.push(test.title[k]);
+                                        }
+                                    }
+                                    if (suite.length > 0) {
+                                        testCase.suite = suite.join(" - ");
+                                    }
+                                    if (test.title !== undefined) {
+                                        testCase.name = test.title[test.title.length -1];
+                                    }
+                                    // result
+                                    if (test.state === 'passed') {
+                                        testCase.result = 'pass';
+                                    } else if (test.state === 'failed') {
+                                        testCase.result = 'fail';
+                                    } else {
+                                        testCase.result = 'unknown';
+                                    }
+                                    // reason
+                                    if (testCase.result === 'fail') {
+                                        testCase.reason = test.error + " " + test.stack;
+                                    }
+                                    // files
+                                    testCase.files = [];
+                                    if (run.screenshots !== undefined) {
+                                        for (let k = 0; k < run.screenshots.length; k++) {
+                                            let screenshot = run.screenshots[k];
+                                            if (test.testId === screenshot.testId) {
+                                                testCase.files.push(screenshot.path);
+                                            }
+                                        }
+                                    }
+                                    // start, end
+                                    try {
+                                        let date = new Date(test.wallClockStartedAt);
+                                        testCase.start = date.getTime();
+                                        testCase.end = testCase.start + test.wallClockDuration;
+                                    } catch (ignore) {
+                                        // Ignore errors with start, end
+                                    }
+                                    data.results.cases.push(testCase);
+                                }
+                            }
+                        }
                     }
                 }
-                // start, end
-                try {
-                    let date = new Date(test.wallClockStartedAt);
-                    testCase.start = date.getTime();
-                    testCase.end = testCase.start + test.wallClockDuration;
-                } catch (ignore) {
-                    // Ignore errors with start, end
-                }
-                data.results.cases.push(testCase);
             }
         }
         // upload
