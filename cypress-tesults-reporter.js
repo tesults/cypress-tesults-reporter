@@ -70,13 +70,14 @@ module.exports.results = function (results, args) {
                                         }
                                     }
                                     // start, end
+                                    /* Removed due to cypress changes
                                     try {
                                         let date = new Date(test.wallClockStartedAt);
                                         testCase.start = date.getTime();
                                         testCase.end = testCase.start + test.wallClockDuration;
                                     } catch (ignore) {
                                         // Ignore errors with start, end
-                                    }
+                                    }*/
                                     data.results.cases.push(testCase);
                                 }
                             }
