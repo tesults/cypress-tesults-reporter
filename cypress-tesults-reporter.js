@@ -31,20 +31,15 @@ module.exports.results = function (results, args) {
     try {
         let data = {
             target: args.target,
-            results: {cases: []}
-        }
-        // build case
-        if (args.build !== undefined) {
-            if (args.build.name !== undefined && args.build.result !== undefined) {
-                let buildCase = args.build;
-                if (buildCase.result !== 'pass' && buildCase !== 'fail' && buildCase !== 'unknown') {
-                    buildCase.result = 'unknown';
-                }
-                buildCase.suite = '[build]';
-                data.results.cases.push(buildCase);
+            results: {cases: []},
+            metadata: {
+                integration_name: "cypress-tesults-reporter",
+                integration_version: "1.3.0",
+                test_framework: "cypress"
             }
         }
         // test cases
+        let firstCaseOfSuiteNum = 0
         if (results !== undefined) {
             if (results.runs !== undefined) {
                 for (let i = 0; i < results.runs.length; i++) {
@@ -52,6 +47,9 @@ module.exports.results = function (results, args) {
                     if (run !== undefined) {
                         if (run.tests !== undefined) {
                             for (let j = 0; j < run.tests.length; j++) {
+                                if (j === 0) {
+                                    firstCaseOfSuiteNum = data.results.cases.length
+                                }
                                 let test = run.tests[j];
                                 if (test !== undefined) {
                                     let testCase = {};
@@ -79,6 +77,7 @@ module.exports.results = function (results, args) {
                                     } else {
                                         testCase.result = 'unknown';
                                     }
+                                    testCase.rawResult = test.state
                                     // reason
                                     if (testCase.result === 'fail') {
                                         if (test.error !== undefined && test.stack !== undefined) {
@@ -108,9 +107,7 @@ module.exports.results = function (results, args) {
                                                     }
                                                 }
                                                 if (attempt.videoTimestamp !== undefined) {
-                                                    if (j !== 0) {
-                                                        testCase["_Video timestamp"] = attempt.videoTimestamp + "ms (Video available to view in the first test case of the spec)"
-                                                    }
+                                                    testCase["_Video timestamp"] = attempt.videoTimestamp + "ms"
                                                 }
                                                 if (attempt.startedAt !== undefined) {
                                                     testCase.start = (new Date(attempt.startedAt)).getTime()
@@ -124,6 +121,18 @@ module.exports.results = function (results, args) {
                                     if (run.video !== undefined) {
                                         if (j === 0) {
                                             testCase.files.push(run.video)
+                                        } else {
+                                            if (testCase.refFiles === undefined) {
+                                                testCase.refFiles = []
+                                            }
+                                            testCase.refFiles.push(
+                                                {
+                                                    version: "1",
+                                                    type: "local-run",
+                                                    num: firstCaseOfSuiteNum,
+                                                    file: run.video
+                                                }
+                                            )
                                         }
                                     }
                                     if (test.body !== undefined) {
@@ -152,23 +161,33 @@ module.exports.results = function (results, args) {
                                 }
                             }
                         }
-                        // build case
-                        if (args.build_name !== undefined) {
-                            let buildCase = {
-                                suite: "[build]",
-                                name: args.build_name,
-                                desc: args.build_description,
-                                reason: args.build_reason,
-                                result: args.build_result,
-                                files: caseFiles(args.files, "[build]", args.build_name)
-                            }
-                            if (buildCase.result !== "pass" && buildCase.result !== "fail") {
-                                buildCase.result = "unknown"
-                            }
-                            data.results.cases.push(buildCase)
-                        }
                     }
                 }
+            }
+        }
+        // build case
+        if (args.build_name !== undefined) {
+            let buildCase = {
+                suite: "[build]",
+                name: args.build_name,
+                desc: args.build_description,
+                reason: args.build_reason,
+                result: args.build_result,
+                rawResult: args.build_result,
+                files: caseFiles(args.files, "[build]", args.build_name)
+            }
+            if (buildCase.result !== "pass" && buildCase.result !== "fail") {
+                buildCase.result = "unknown"
+            }
+            data.results.cases.push(buildCase)
+        } else if (args.build !== undefined) {
+            if (args.build.name !== undefined && args.build.result !== undefined) {
+                let buildCase = args.build;
+                if (buildCase.result !== 'pass' && buildCase !== 'fail') {
+                    buildCase.result = 'unknown';
+                }
+                buildCase.suite = '[build]';
+                data.results.cases.push(buildCase);
             }
         }
         // upload
