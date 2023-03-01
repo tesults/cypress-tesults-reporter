@@ -13,7 +13,7 @@ const caseFiles = (filesDir, suite, name) => {
                 }
             });
         }
-        catch (err) { 
+        catch (err) {
             if (err.code === 'ENOENT') {
                 // Normal scenario where no files present
             } else {
@@ -31,7 +31,7 @@ module.exports.results = function (results, args) {
     try {
         let data = {
             target: args.target,
-            results: {cases: []},
+            results: { cases: [] },
             metadata: {
                 integration_name: "cypress-tesults-reporter",
                 integration_version: "1.3.0",
@@ -67,7 +67,7 @@ module.exports.results = function (results, args) {
                                         testCase.suite = suite.join(" - ");
                                     }
                                     if (test.title !== undefined) {
-                                        testCase.name = test.title[test.title.length -1];
+                                        testCase.name = test.title[test.title.length - 1];
                                     }
                                     // result
                                     if (test.state === 'passed') {
@@ -98,7 +98,7 @@ module.exports.results = function (results, args) {
                                     } else if (test.attempts !== undefined) {
                                         if (Array.isArray(test.attempts)) {
                                             if (test.attempts.length > 0) {
-                                                let attempt = test.attempts[test.attempts.length -1]
+                                                let attempt = test.attempts[test.attempts.length - 1]
                                                 if (attempt.screenshots !== undefined) {
                                                     if (Array.isArray(attempt.screenshots)) {
                                                         for (let s = 0; s < attempt.screenshots.length; s++) {
@@ -118,7 +118,7 @@ module.exports.results = function (results, args) {
                                             }
                                         }
                                     }
-                                    if (run.video !== undefined) {
+                                    if (run.video) {
                                         if (j === 0) {
                                             testCase.files.push(run.video)
                                         } else {
@@ -193,13 +193,13 @@ module.exports.results = function (results, args) {
         // upload
         console.log('Tesults results uploading...');
         tesults.results(data, function (err, response) {
-            if (err) {  
-              console.log('Tesults library error, failed to upload.');
+            if (err) {
+                console.log('Tesults library error, failed to upload.');
             } else {
-              console.log('Success: ' + response.success);
-              console.log('Message: ' + response.message);
-              console.log('Warnings: ' + response.warnings.length);
-              console.log('Errors: ' + response.errors.length);
+                console.log('Success: ' + response.success);
+                console.log('Message: ' + response.message);
+                console.log('Warnings: ' + response.warnings.length);
+                console.log('Errors: ' + response.errors.length);
             }
         });
     } catch (err) {
