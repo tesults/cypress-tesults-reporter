@@ -24,7 +24,7 @@ const caseFiles = (filesDir, suite, name) => {
     return files;
 }
 
-module.exports.results = function (results, args) {
+module.exports.results = function (results, args, callback) {
     if (results === undefined || args === undefined) {
         return;
     }
@@ -200,6 +200,9 @@ module.exports.results = function (results, args) {
                 console.log('Message: ' + response.message);
                 console.log('Warnings: ' + response.warnings.length);
                 console.log('Errors: ' + response.errors.length);
+            }
+            if (typeof callback == 'function') {
+                callback(response, err)
             }
         });
     } catch (err) {
