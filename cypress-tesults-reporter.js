@@ -13,7 +13,7 @@ const caseFiles = (filesDir, suite, name) => {
                 }
             });
         }
-        catch (err) {
+        catch (err) { 
             if (err.code === 'ENOENT') {
                 // Normal scenario where no files present
             } else {
@@ -24,8 +24,20 @@ const caseFiles = (filesDir, suite, name) => {
     return files;
 }
 
-module.exports.results = function (results, args) {
+const processCallback = (err, response, callback) => {
+    try {
+        if (typeof callback !== 'function') {
+            return
+        }
+        callback(err, response)
+    } catch (err) {
+        console.log('Error processing callback: ' + err)
+    }
+}
+
+module.exports.results = function (results, args, callback) {
     if (results === undefined || args === undefined) {
+        processCallback("Error: results or args undefined", undefined, callback)
         return;
     }
     try {
@@ -34,7 +46,7 @@ module.exports.results = function (results, args) {
             results: { cases: [] },
             metadata: {
                 integration_name: "cypress-tesults-reporter",
-                integration_version: "1.3.0",
+                integration_version: "1.4.0",
                 test_framework: "cypress"
             }
         }
@@ -193,16 +205,21 @@ module.exports.results = function (results, args) {
         // upload
         console.log('Tesults results uploading...');
         tesults.results(data, function (err, response) {
-            if (err) {
-                console.log('Tesults library error, failed to upload.');
+            if (err) {  
+                const errMessage = "Tesults library error, failed to upload."
+                console.log(errMessage)
+                processCallback(errMessage, undefined, callback)
             } else {
-                console.log('Success: ' + response.success);
-                console.log('Message: ' + response.message);
-                console.log('Warnings: ' + response.warnings.length);
-                console.log('Errors: ' + response.errors.length);
+              console.log('Success: ' + response.success);
+              console.log('Message: ' + response.message);
+              console.log('Warnings: ' + response.warnings.length);
+              console.log('Errors: ' + response.errors.length);
+              processCallback(undefined, response, callback)
             }
         });
     } catch (err) {
-        console.log('cypress-tesults-reporter error parsing results data from Cypress: ' + err);
+        const errMessage = "cypress-tesults-reporter error parsing results data from Cypress: " + err
+        console.log(errMessage);
+        processCallback(errMessage, undefined, callback)
     }
 }
