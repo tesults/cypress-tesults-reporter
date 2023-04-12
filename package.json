@@ -1,6 +1,6 @@
 {
   "name": "cypress-tesults-reporter",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Cypress Tesults Reporter",
   "main": "cypress-tesults-reporter.js",
   "scripts": {
