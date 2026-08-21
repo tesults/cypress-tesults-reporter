@@ -46,7 +46,7 @@ module.exports.results = function (results, args, callback) {
             results: { cases: [] },
             metadata: {
                 integration_name: "cypress-tesults-reporter",
-                integration_version: "1.4.0",
+                integration_version: "1.4.2",
                 test_framework: "cypress"
             }
         }
