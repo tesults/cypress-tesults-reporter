@@ -1,0 +1,89 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  checks: write
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+  cypress:
+    name: Cypress ${{ matrix.scenario }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: passing, storage off
+            command: npm run test:e2e
+            expected_outcome: success
+            store_attachments: false
+          - scenario: failing, storage off
+            command: npm run test:e2e:fail
+            expected_outcome: failure
+            store_attachments: false
+          - scenario: passing, storage on
+            command: npm run test:e2e
+            expected_outcome: success
+            store_attachments: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up test automation reporting
+        uses: tesults/test-automation-reporting@v1
+        with:
+          store-attachments: ${{ matrix.store_attachments }}
+
+      - name: Run Cypress tests
+        id: tests
+        continue-on-error: true
+        run: ${{ matrix.command }}
+
+      - name: Confirm expected test outcome
+        if: always()
+        shell: bash
+        run: |
+          if [[ "${{ steps.tests.outcome }}" != "${{ matrix.expected_outcome }}" ]]; then
+            echo "Expected ${{ matrix.expected_outcome }}, got ${{ steps.tests.outcome }}"
+            exit 1
+          fi

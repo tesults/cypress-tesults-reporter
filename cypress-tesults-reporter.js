@@ -1,6 +1,7 @@
 const tesults = require('tesults');
 const fs = require("fs");
 const path = require("path");
+const integrationVersion = require('./package.json').version;
 
 const caseFiles = (filesDir, suite, name) => {
     const files = [];
@@ -36,17 +37,34 @@ const processCallback = (err, response, callback) => {
 }
 
 module.exports.results = function (results, args, callback) {
-    if (results === undefined || args === undefined) {
+    const outputFileValue = process.env.TESULTS_OUTPUT_FILE;
+    const outputFile = typeof outputFileValue === 'string' && outputFileValue.trim().length > 0
+        ? outputFileValue
+        : undefined;
+    const options = args === undefined ? {} : args;
+
+    return new Promise((resolve, reject) => {
+    const finish = (err, response, rejectPromise) => {
+        processCallback(err, response, callback);
+        if (rejectPromise === true && err !== undefined) {
+            reject(err instanceof Error ? err : new Error(String(err)));
+        } else {
+            resolve(response);
+        }
+    };
+
+    if (results === undefined || (args === undefined && outputFile === undefined)) {
         processCallback("Error: results or args undefined", undefined, callback)
+        resolve();
         return;
     }
     try {
         let data = {
-            target: args.target,
+            target: options.target === undefined ? "" : options.target,
             results: { cases: [] },
             metadata: {
                 integration_name: "cypress-tesults-reporter",
-                integration_version: "1.4.2",
+                integration_version: integrationVersion,
                 test_framework: "cypress"
             }
         }
@@ -161,7 +179,7 @@ module.exports.results = function (results, args, callback) {
                                         }
                                     }
                                     // Custom files
-                                    const files = caseFiles(args.files, testCase.suite, testCase.name);
+                                    const files = caseFiles(options.files, testCase.suite, testCase.name);
                                     if (files.length > 0) {
                                         for (let i = 0; i < files.length; i++) {
                                             let file = files[i]
@@ -178,23 +196,23 @@ module.exports.results = function (results, args, callback) {
             }
         }
         // build case
-        if (args.build_name !== undefined) {
+        if (options.build_name !== undefined) {
             let buildCase = {
                 suite: "[build]",
-                name: args.build_name,
-                desc: args.build_description,
-                reason: args.build_reason,
-                result: args.build_result,
-                rawResult: args.build_result,
-                files: caseFiles(args.files, "[build]", args.build_name)
+                name: options.build_name,
+                desc: options.build_description,
+                reason: options.build_reason,
+                result: options.build_result,
+                rawResult: options.build_result,
+                files: caseFiles(options.files, "[build]", options.build_name)
             }
             if (buildCase.result !== "pass" && buildCase.result !== "fail") {
                 buildCase.result = "unknown"
             }
             data.results.cases.push(buildCase)
-        } else if (args.build !== undefined) {
-            if (args.build.name !== undefined && args.build.result !== undefined) {
-                let buildCase = args.build;
+        } else if (options.build !== undefined) {
+            if (options.build.name !== undefined && options.build.result !== undefined) {
+                let buildCase = options.build;
                 if (buildCase.result !== 'pass' && buildCase !== 'fail') {
                     buildCase.result = 'unknown';
                 }
@@ -202,24 +220,56 @@ module.exports.results = function (results, args, callback) {
                 data.results.cases.push(buildCase);
             }
         }
+        // local output
+        let outputError;
+        if (outputFile !== undefined) {
+            try {
+                const outputData = { ...data, target: "" };
+                fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+                fs.writeFileSync(outputFile, JSON.stringify(outputData, null, 2));
+                console.log('Tesults results written to ' + outputFile);
+            } catch (err) {
+                outputError = err;
+                console.log('Tesults error, failed to write results file.');
+            }
+        }
+
+        if (options.target === undefined && outputFile !== undefined) {
+            if (outputError !== undefined) {
+                finish(outputError, undefined, true);
+            } else {
+                finish(undefined, undefined, false);
+            }
+            return;
+        }
+
         // upload
         console.log('Tesults results uploading...');
         tesults.results(data, function (err, response) {
             if (err) {  
                 const errMessage = "Tesults library error, failed to upload."
                 console.log(errMessage)
-                processCallback(errMessage, undefined, callback)
+                if (outputError !== undefined) {
+                    finish(outputError, undefined, true);
+                } else {
+                    finish(errMessage, undefined, false);
+                }
             } else {
               console.log('Success: ' + response.success);
               console.log('Message: ' + response.message);
               console.log('Warnings: ' + response.warnings.length);
               console.log('Errors: ' + response.errors.length);
-              processCallback(undefined, response, callback)
+              if (outputError !== undefined) {
+                  finish(outputError, undefined, true);
+              } else {
+                  finish(undefined, response, false);
+              }
             }
         });
     } catch (err) {
         const errMessage = "cypress-tesults-reporter error parsing results data from Cypress: " + err
         console.log(errMessage);
-        processCallback(errMessage, undefined, callback)
+        finish(errMessage, undefined, outputFile !== undefined)
     }
+    });
 }
